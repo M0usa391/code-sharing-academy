@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,20 +8,22 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 // Use lazy loading for routes to improve performance
-const Index = React.lazy(() => import("./pages/Index"));
-const NotFound = React.lazy(() => import("./pages/NotFound"));
-const Dashboard = React.lazy(() => import("./pages/Dashboard"));
-const Profile = React.lazy(() => import("./pages/Profile"));
-const Post = React.lazy(() => import("./pages/Post"));
-const Login = React.lazy(() => import("./pages/Login"));
-const Register = React.lazy(() => import("./pages/Register"));
+const Index = lazy(() => import("./pages/Index"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Post = lazy(() => import("./pages/Post"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 
-// Configure the query client with optimized settings
+// Configure the query client with optimized settings for better performance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1, // Reduce retry attempts
+      networkMode: 'always', // More aggressive network mode
     },
   },
 });
@@ -31,37 +33,37 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Optimized session checking
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
       setLoading(false);
-
-      // Set up auth state change listener
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        (event, newSession) => {
-          setSession(newSession);
-        }
-      );
-
-      return () => {
-        authListener.subscription.unsubscribe();
-      };
     };
-
+    
     checkSession();
+    
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        setSession(newSession);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  // Loading spinner component for better user experience
+  // Simplified loading spinner
   const LoadingSpinner = () => (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
   );
 
-  // Authenticated route component with optimized loading
+  // Optimized protected route component
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (loading) return <LoadingSpinner />;
-    
     if (!session) return <Navigate to="/login" replace />;
     return <>{children}</>;
   };
@@ -69,7 +71,6 @@ const App = () => {
   // Route that redirects logged in users to dashboard
   const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
     if (loading) return <LoadingSpinner />;
-    
     if (session) return <Navigate to="/dashboard" replace />;
     return <>{children}</>;
   };

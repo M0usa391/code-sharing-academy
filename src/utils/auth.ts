@@ -7,14 +7,14 @@ import { toast } from "sonner";
  */
 export const createAdminAccount = async () => {
   try {
-    // Check if admin already exists
-    const { data: existingUser, error: checkError } = await supabase
+    // Check if admin already exists - simplified query
+    const { data: existingUser } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id")
       .eq("username", "mousa.omar.com@gmail.com")
       .single();
 
-    if (!checkError && existingUser) {
+    if (existingUser) {
       console.log("Admin account already exists");
       return;
     }
@@ -46,22 +46,22 @@ export const createAdminAccount = async () => {
  */
 export const loginUser = async (email: string, password: string) => {
   try {
+    // Show loading toast
+    const toastId = toast.loading("جاري تسجيل الدخول...");
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
+    toast.dismiss(toastId);
+    
     if (error) throw error;
     
-    // Pre-fetch user profile to improve performance
-    await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", data.user?.id)
-      .single();
-      
+    toast.success("تم تسجيل الدخول بنجاح");
     return { data, error: null };
   } catch (error: any) {
+    toast.error(error.message || "فشل تسجيل الدخول");
     return { data: null, error };
   }
 };
