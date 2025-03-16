@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Code, Eye, EyeOff, User, Lock, Mail, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -20,8 +21,8 @@ const Register = () => {
     
     if (password !== confirmPassword) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
+        title: "كلمات المرور غير متطابقة",
+        description: "يرجى التأكد من تطابق كلمات المرور",
         variant: "destructive",
         duration: 3000,
       });
@@ -31,28 +32,30 @@ const Register = () => {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Save user info to localStorage
-      localStorage.setItem("user", JSON.stringify({
+      const { data, error } = await supabase.auth.signUp({
         email,
-        name,
-        role: "user"
-      }));
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      
+      if (error) throw error;
       
       toast({
-        title: "Registration successful!",
-        description: "Your account has been created.",
+        title: "تم إنشاء الحساب بنجاح!",
+        description: "تم إنشاء حسابك بنجاح.",
         duration: 3000,
       });
       
       // Redirect to dashboard
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Registration failed",
-        description: "Please try again later.",
+        title: "فشل التسجيل",
+        description: error.message || "حدث خطأ أثناء إنشاء الحساب. يرجى المحاولة مرة أخرى.",
         variant: "destructive",
         duration: 3000,
       });
@@ -92,23 +95,23 @@ const Register = () => {
       <div className="container mx-auto px-4 py-8">
         <Link to="/" className="flex items-center space-x-2">
           <Code className="h-6 w-6 text-primary" />
-          <span className="font-semibold text-lg">CodeShare Academy</span>
+          <span className="font-semibold text-lg">أكاديمية Bn0mar</span>
         </Link>
       </div>
       
       <div className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="glass max-w-md w-full p-8 rounded-2xl shadow-xl animate-scale">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold">Create an account</h2>
+            <h2 className="text-3xl font-bold">إنشاء حساب جديد</h2>
             <p className="text-foreground/70 mt-2">
-              Join the CodeShare Academy community
+              انضم إلى مجتمع أكاديمية Bn0mar
             </p>
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-                Full name
+                الاسم الكامل
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -123,14 +126,14 @@ const Register = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input pl-10 w-full"
-                  placeholder="Enter your full name"
+                  placeholder="أدخل اسمك الكامل"
                 />
               </div>
             </div>
             
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-                Email address
+                البريد الإلكتروني
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -145,14 +148,14 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input pl-10 w-full"
-                  placeholder="Enter your email"
+                  placeholder="أدخل بريدك الإلكتروني"
                 />
               </div>
             </div>
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
-                Password
+                كلمة المرور
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -167,7 +170,7 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input pl-10 pr-10 w-full"
-                  placeholder="Create a password"
+                  placeholder="أنشئ كلمة مرور"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <button
@@ -193,7 +196,7 @@ const Register = () => {
                     ></div>
                   </div>
                   <p className="text-xs mt-1 text-foreground/60">
-                    Password strength: {text}
+                    قوة كلمة المرور: {text}
                   </p>
                 </div>
               )}
@@ -203,32 +206,32 @@ const Register = () => {
                   <div className={`h-3 w-3 rounded-full flex items-center justify-center ${password.length >= 8 ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {password.length >= 8 && <Check className="h-2 w-2 text-white" />}
                   </div>
-                  <span>8+ characters</span>
+                  <span>8+ أحرف</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className={`h-3 w-3 rounded-full flex items-center justify-center ${/[A-Z]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {/[A-Z]/.test(password) && <Check className="h-2 w-2 text-white" />}
                   </div>
-                  <span>Uppercase letter</span>
+                  <span>حرف كبير</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className={`h-3 w-3 rounded-full flex items-center justify-center ${/[0-9]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {/[0-9]/.test(password) && <Check className="h-2 w-2 text-white" />}
                   </div>
-                  <span>Number</span>
+                  <span>رقم</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className={`h-3 w-3 rounded-full flex items-center justify-center ${/[^A-Za-z0-9]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {/[^A-Za-z0-9]/.test(password) && <Check className="h-2 w-2 text-white" />}
                   </div>
-                  <span>Special character</span>
+                  <span>رمز خاص</span>
                 </div>
               </div>
             </div>
             
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1">
-                Confirm password
+                تأكيد كلمة المرور
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -243,7 +246,7 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input pl-10 pr-10 w-full"
-                  placeholder="Confirm your password"
+                  placeholder="أكد كلمة المرور"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <button
@@ -260,7 +263,7 @@ const Register = () => {
                 </div>
               </div>
               {confirmPassword && password !== confirmPassword && (
-                <p className="mt-1 text-xs text-red-500">Passwords don't match</p>
+                <p className="mt-1 text-xs text-red-500">كلمات المرور غير متطابقة</p>
               )}
             </div>
             
@@ -272,14 +275,14 @@ const Register = () => {
                 required
                 className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-foreground/70">
-                I agree to the{" "}
+              <label htmlFor="terms" className="mr-2 block text-sm text-foreground/70">
+                أوافق على{" "}
                 <a href="#" className="text-primary hover:text-primary/80">
-                  Terms
+                  الشروط
                 </a>{" "}
-                and{" "}
+                و{" "}
                 <a href="#" className="text-primary hover:text-primary/80">
-                  Privacy Policy
+                  سياسة الخصوصية
                 </a>
               </label>
             </div>
@@ -296,16 +299,16 @@ const Register = () => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : null}
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
               </button>
             </div>
           </form>
           
           <div className="mt-8 text-center">
             <p className="text-sm text-foreground/70">
-              Already have an account?{" "}
+              لديك حساب بالفعل؟{" "}
               <Link to="/login" className="font-medium text-primary hover:text-primary/80">
-                Sign in
+                تسجيل الدخول
               </Link>
             </p>
           </div>

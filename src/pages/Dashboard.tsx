@@ -1,14 +1,17 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Code, Plus, Filter, Search, Settings, LogOut, User, Edit, Trash2, MoreVertical, ChevronDown, Check, X } from "lucide-react";
+import { Code, Plus, Filter, Search, Settings, LogOut, User, Edit, Trash2, MoreVertical, ChevronDown, Check, X, BadgeCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/PostCard";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserType {
-  email: string;
-  name: string;
-  role: string;
+  id: string;
+  full_name: string;
+  username: string;
+  is_admin: boolean;
+  is_verified: boolean;
 }
 
 interface PostType {
@@ -19,6 +22,7 @@ interface PostType {
     id: string;
     name: string;
     avatarUrl: string;
+    is_verified?: boolean;
   };
   createdAt: string;
   likes: number;
@@ -34,140 +38,217 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<PostType[]>([]);
-  const [users, setUsers] = useState<{id: string; name: string; email: string; role: string}[]>([]);
+  const [users, setUsers] = useState<{id: string; full_name: string; username: string; is_admin: boolean; is_verified: boolean}[]>([]);
   const [activeTab, setActiveTab] = useState("posts");
   const [searchQuery, setSearchQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
-  
-  // Mock data for posts
-  const mockPosts: PostType[] = [
-    {
-      id: "post1",
-      title: "Implementing JWT Authentication in Node.js",
-      content: "A guide on how to set up secure authentication using JSON Web Tokens in a Node.js application. This approach handles user registration, login, and protected routes.",
-      author: {
-        id: "user1",
-        name: "Alex Johnson",
-        avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-      },
-      createdAt: "2023-05-20T08:30:00Z",
-      likes: 82,
-      comments: 14,
-      tags: ["Node.js", "Authentication", "JWT", "Security"]
-    },
-    {
-      id: "post2",
-      title: "CSS Grid vs Flexbox: When to Use Each",
-      content: "A comparison of CSS Grid and Flexbox layout systems, with examples showing ideal use cases for each approach to create modern responsive layouts.",
-      author: {
-        id: "user2",
-        name: "Maria Rodriguez",
-        avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-      },
-      createdAt: "2023-05-18T14:15:00Z",
-      likes: 96,
-      comments: 21,
-      tags: ["CSS", "Flexbox", "CSS Grid", "Frontend"]
-    },
-    {
-      id: "post3",
-      title: "Building a Custom React Hook for API Calls",
-      content: "Learn how to create a reusable React hook for handling API requests, including loading states, error handling, and caching to improve performance.",
-      author: {
-        id: "user3",
-        name: "David Kim",
-        avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-      },
-      createdAt: "2023-05-15T10:45:00Z",
-      likes: 124,
-      comments: 28,
-      tags: ["React", "Hooks", "API", "Frontend"]
-    },
-  ];
-  
-  // Mock data for users
-  const mockUsers = [
-    { id: "user1", name: "Alex Johnson", email: "alex@example.com", role: "user" },
-    { id: "user2", name: "Maria Rodriguez", email: "maria@example.com", role: "user" },
-    { id: "user3", name: "David Kim", email: "david@example.com", role: "user" },
-    { id: "user4", name: "Sarah Williams", email: "sarah@example.com", role: "admin" },
-    { id: "admin1", name: "Mousa Omar", email: "mousa.omar.com@gmail.com", role: "admin" }
-  ];
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
+    const checkSession = async () => {
+      setLoading(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      
+      // Get user profile information
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error || !profile) {
+        console.error('Error fetching profile:', error);
+        navigate("/login");
+        return;
+      }
+      
+      setUser({
+        id: profile.id,
+        full_name: profile.full_name,
+        username: profile.username,
+        is_admin: profile.is_admin,
+        is_verified: profile.is_verified
+      });
+      
+      setIsAdmin(profile.is_admin);
+      
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          title,
+          content,
+          created_at,
+          tags,
+          profiles:user_id (id, full_name, avatar_url, is_verified)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (!postsError && postsData) {
+        const formattedPosts = postsData.map(post => ({
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          author: {
+            id: post.profiles.id,
+            name: post.profiles.full_name,
+            avatarUrl: post.profiles.avatar_url || 'https://via.placeholder.com/150',
+            is_verified: post.profiles.is_verified
+          },
+          createdAt: post.created_at,
+          likes: 0, // We'll implement this later
+          comments: 0, // We'll implement this later
+          tags: post.tags || []
+        }));
+        
+        setPosts(formattedPosts);
+      }
+      
+      // If admin, fetch users
+      if (profile.is_admin) {
+        const { data: usersData, error: usersError } = await supabase
+          .from('profiles')
+          .select('*');
+        
+        if (!usersError && usersData) {
+          setUsers(usersData);
+        }
+      }
+      
+      setLoading(false);
+    };
     
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
-    setIsAdmin(parsedUser.role === "admin");
-    
-    // Load mock data
-    setPosts(mockPosts);
-    setUsers(mockUsers);
+    checkSession();
   }, [navigate]);
   
-  const handleLogout = () => {
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
+      title: "تم تسجيل الخروج",
+      description: "تم تسجيل الخروج بنجاح.",
       duration: 3000,
     });
     navigate("/login");
   };
   
-  const makeAdmin = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, role: "admin" } : user
-    ));
-    
-    toast({
-      title: "User promoted",
-      description: "User has been promoted to admin.",
-      duration: 3000,
-    });
+  const toggleVerification = async (userId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_verified: !currentStatus })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, is_verified: !currentStatus } : user
+      ));
+      
+      toast({
+        title: currentStatus ? "تم إلغاء التوثيق" : "تم التوثيق",
+        description: currentStatus ? "تم إلغاء توثيق المستخدم بنجاح." : "تم توثيق المستخدم بنجاح.",
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشلت عملية تغيير حالة التوثيق.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
-  const removeAdmin = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, role: "user" } : user
-    ));
-    
-    toast({
-      title: "Admin rights removed",
-      description: "Admin rights have been removed from user.",
-      duration: 3000,
-    });
+  const toggleAdmin = async (userId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_admin: !currentStatus })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, is_admin: !currentStatus } : user
+      ));
+      
+      toast({
+        title: currentStatus ? "تم إزالة صلاحيات المسؤول" : "تمت الترقية إلى مسؤول",
+        description: currentStatus ? "تم إزالة صلاحيات المسؤول من المستخدم." : "تمت ترقية المستخدم إلى مسؤول.",
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشلت عملية تغيير صلاحيات المستخدم.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
-  const deleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    
-    toast({
-      title: "User deleted",
-      description: "User has been successfully deleted.",
-      duration: 3000,
-    });
+  const deleteUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      setUsers(users.filter(user => user.id !== userId));
+      
+      toast({
+        title: "تم حذف المستخدم",
+        description: "تم حذف المستخدم بنجاح.",
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشلت عملية حذف المستخدم.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
-  const deletePost = (postId: string) => {
-    setPosts(posts.filter(post => post.id !== postId));
-    
-    toast({
-      title: "Post deleted",
-      description: "Post has been successfully deleted.",
-      duration: 3000,
-    });
+  const deletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+      
+      if (error) throw error;
+      
+      setPosts(posts.filter(post => post.id !== postId));
+      
+      toast({
+        title: "تم حذف المنشور",
+        description: "تم حذف المنشور بنجاح.",
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشلت عملية حذف المنشور.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const filteredPosts = posts.filter(post => 
@@ -175,6 +256,14 @@ const Dashboard = () => {
     post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   
   if (!user) return null;
   
@@ -185,7 +274,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Code className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">CodeShare Academy</span>
+            <span className="font-semibold text-lg">أكاديمية Bn0mar</span>
           </Link>
           
           <div className="relative">
@@ -193,7 +282,12 @@ const Dashboard = () => {
               onClick={() => setShowMenu(!showMenu)}
               className="flex items-center space-x-2 rounded-lg hover:bg-secondary p-2 transition-colors"
             >
-              <span>{user.name}</span>
+              <span className="flex items-center">
+                {user.full_name}
+                {user.is_verified && (
+                  <BadgeCheck className="ml-1 h-4 w-4 text-blue-500" />
+                )}
+              </span>
               <ChevronDown className="h-4 w-4" />
             </button>
             
@@ -204,21 +298,21 @@ const Dashboard = () => {
                   className="block px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors flex items-center space-x-2"
                 >
                   <User className="h-4 w-4" />
-                  <span>Your Profile</span>
+                  <span>الملف الشخصي</span>
                 </Link>
                 <Link
                   to="/settings"
                   className="block px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors flex items-center space-x-2"
                 >
                   <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>الإعدادات</span>
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center space-x-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>تسجيل الخروج</span>
                 </button>
               </div>
             )}
@@ -229,12 +323,12 @@ const Dashboard = () => {
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-foreground">
-            {isAdmin ? "Admin Dashboard" : "Your Dashboard"}
+            {isAdmin ? "لوحة المسؤول" : "لوحة التحكم"}
           </h1>
           
           <Link to="/post/new" className="btn-primary flex items-center space-x-2">
             <Plus className="h-5 w-5" />
-            <span>New Post</span>
+            <span>منشور جديد</span>
           </Link>
         </div>
         
@@ -249,7 +343,7 @@ const Dashboard = () => {
                     : "text-foreground/70 hover:bg-secondary transition-colors"
                 }`}
               >
-                Posts
+                المنشورات
               </button>
               
               {isAdmin && (
@@ -261,7 +355,7 @@ const Dashboard = () => {
                       : "text-foreground/70 hover:bg-secondary transition-colors"
                   }`}
                 >
-                  Users
+                  المستخدمين
                 </button>
               )}
             </div>
@@ -273,7 +367,7 @@ const Dashboard = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder={`Search ${activeTab}...`}
+                  placeholder={`بحث في ${activeTab === "posts" ? "المنشورات" : "المستخدمين"}...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="input pl-10 py-2"
@@ -282,7 +376,7 @@ const Dashboard = () => {
               
               <button className="input flex items-center space-x-2 py-2">
                 <Filter className="h-5 w-5 text-foreground/60" />
-                <span>Filter</span>
+                <span>تصفية</span>
               </button>
             </div>
           </div>
@@ -293,29 +387,67 @@ const Dashboard = () => {
             {filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
                 <div key={post.id} className="relative">
-                  <PostCard post={post} />
-                  
-                  {isAdmin && (
-                    <div className="absolute top-4 right-4 flex space-x-1">
-                      <button
-                        onClick={() => navigate(`/post/edit/${post.id}`)}
-                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-secondary transition-colors"
-                      >
-                        <Edit className="h-4 w-4 text-foreground/70" />
-                      </button>
-                      <button
-                        onClick={() => deletePost(post.id)}
-                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 text-foreground/70" />
-                      </button>
+                  <div className="card p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center">
+                        <div className="ml-3">
+                          <div className="font-medium text-foreground flex items-center">
+                            {post.author.name}
+                            {post.author.is_verified && (
+                              <BadgeCheck className="ml-1 h-4 w-4 text-blue-500" />
+                            )}
+                          </div>
+                          <div className="text-foreground/60 text-sm">
+                            {new Date(post.createdAt).toLocaleDateString('ar-LY')}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {(isAdmin || user.id === post.author.id) && (
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => navigate(`/post/edit/${post.id}`)}
+                            className="p-1.5 bg-secondary/50 rounded-full hover:bg-secondary transition-colors"
+                          >
+                            <Edit className="h-4 w-4 text-foreground/70" />
+                          </button>
+                          <button
+                            onClick={() => deletePost(post.id)}
+                            className="p-1.5 bg-secondary/50 rounded-full hover:bg-red-100 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 text-foreground/70" />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    
+                    <h3 className="text-xl font-semibold mb-2">{post.title}</h3>
+                    <p className="text-foreground/80 mb-4">{post.content.substring(0, 150)}...</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-secondary/50 rounded-full text-xs text-foreground/70"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <Link to={`/post/${post.id}`} className="text-primary hover:text-primary/80">
+                      اقرأ المزيد
+                    </Link>
+                  </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-                <p className="text-foreground/60">No posts found.</p>
+                <p className="text-foreground/60">لا توجد منشورات.</p>
+                <Link to="/post/new" className="mt-4 btn-primary inline-flex items-center">
+                  <Plus className="h-5 w-5 mr-1" />
+                  إنشاء منشور جديد
+                </Link>
               </div>
             )}
           </div>
@@ -326,17 +458,17 @@ const Dashboard = () => {
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-secondary/30">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                    Name
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                    الاسم
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                    Email
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                    البريد الإلكتروني
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                    Role
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                    الصلاحيات
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                    Actions
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                    الإجراءات
                   </th>
                 </tr>
               </thead>
@@ -344,48 +476,56 @@ const Dashboard = () => {
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-secondary/10 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-foreground">{user.name}</div>
+                      <div className="font-medium text-foreground flex items-center">
+                        {user.full_name}
+                        {user.is_verified && (
+                          <BadgeCheck className="mr-1 h-4 w-4 text-blue-500" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-foreground/70">{user.email}</div>
+                      <div className="text-foreground/70">{user.username}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.role === "admin" 
+                        user.is_admin 
                           ? "bg-purple-100 text-purple-800" 
                           : "bg-green-100 text-green-800"
                       }`}>
-                        {user.role}
+                        {user.is_admin ? "مسؤول" : "مستخدم"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        {user.role === "admin" ? (
-                          <button
-                            onClick={() => removeAdmin(user.id)}
-                            className="text-amber-600 hover:text-amber-900 flex items-center space-x-1"
-                            disabled={user.email === "mousa.omar.com@gmail.com"}
-                          >
-                            <X className="h-4 w-4" />
-                            <span>Remove Admin</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => makeAdmin(user.id)}
-                            className="text-green-600 hover:text-green-900 flex items-center space-x-1"
-                          >
-                            <Check className="h-4 w-4" />
-                            <span>Make Admin</span>
-                          </button>
-                        )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleVerification(user.id, user.is_verified)}
+                          className={`px-2 py-1 rounded text-xs ${
+                            user.is_verified 
+                              ? "bg-amber-100 text-amber-800" 
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {user.is_verified ? "إلغاء التوثيق" : "توثيق"}
+                        </button>
+                        
+                        <button
+                          onClick={() => toggleAdmin(user.id, user.is_admin)}
+                          className={`px-2 py-1 rounded text-xs ${
+                            user.is_admin 
+                              ? "bg-orange-100 text-orange-800" 
+                              : "bg-green-100 text-green-800"
+                          }`}
+                          disabled={user.username === "mousa.omar.com@gmail.com"}
+                        >
+                          {user.is_admin ? "إلغاء المسؤول" : "ترقية لمسؤول"}
+                        </button>
                         
                         <button
                           onClick={() => deleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900 flex items-center space-x-1"
-                          disabled={user.email === "mousa.omar.com@gmail.com"}
+                          className="px-2 py-1 rounded text-xs bg-red-100 text-red-800"
+                          disabled={user.username === "mousa.omar.com@gmail.com"}
                         >
-                          <Trash2 className="h-4 w-4" />
-                          <span>Delete</span>
+                          حذف
                         </button>
                       </div>
                     </td>

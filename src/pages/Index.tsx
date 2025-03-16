@@ -1,10 +1,11 @@
 
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
-import FeaturedPosts from "../components/FeaturedPosts";
 import Footer from "../components/Footer";
 import { useToast } from "@/hooks/use-toast";
+import { Code, Star, Users, BookOpen, ChevronRight } from "lucide-react";
 
 const Index = () => {
   const { toast } = useToast();
@@ -15,8 +16,8 @@ const Index = () => {
     if (!hasVisited) {
       setTimeout(() => {
         toast({
-          title: "Welcome to CodeShare Academy!",
-          description: "Discover, share and learn with our developer community.",
+          title: "مرحبًا بك في أكاديمية Bn0mar!",
+          description: "اكتشف، شارك وتعلم مع مجتمعنا التعليمي.",
           duration: 5000,
         });
         localStorage.setItem("visited", "true");
@@ -29,76 +30,120 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-grow">
-        <Hero />
+        <section className="bg-gradient-to-b from-primary/10 to-white py-16 px-4">
+          <div className="container mx-auto max-w-5xl text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">أكاديمية Bn0mar</h1>
+            <p className="text-xl md:text-2xl text-foreground/70 mb-8">المنصة التعليمية الليبية الأولى للمطورين والمبرمجين</p>
+            <p className="text-lg mb-8 max-w-3xl mx-auto">
+              أسسها المطور <span className="font-bold text-primary inline-flex items-center">
+                Bn0mar 
+                <span className="ml-1 text-blue-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </span> لتكون منصة تعليمية تفاعلية متكاملة للمطورين الليبيين وجميع المتحدثين باللغة العربية
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/login" className="btn-primary">
+                تسجيل الدخول
+              </Link>
+              <Link to="/register" className="btn-secondary">
+                إنشاء حساب جديد
+              </Link>
+            </div>
+          </div>
+        </section>
         
-        <FeaturedPosts />
-        
-        <section className="py-16 bg-secondary/30">
+        <section className="py-16">
           <div className="container-content">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
-                Why Join CodeShare Academy?
+                لماذا تنضم إلى أكاديمية Bn0mar؟
               </h2>
               <p className="text-foreground/70 max-w-2xl mx-auto">
-                Our platform is designed to help developers at all levels improve their skills, 
-                build their portfolio, and connect with a supportive community.
+                منصتنا مصممة لمساعدة المطورين على جميع المستويات في تحسين مهاراتهم، وبناء محفظة أعمالهم، والتواصل مع مجتمع داعم.
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="card p-6 flex flex-col items-center text-center">
                 <div className="h-16 w-16 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+                  <Users className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Community</h3>
+                <h3 className="text-xl font-semibold mb-2">مجتمع متفاعل</h3>
                 <p className="text-foreground/70">
-                  Connect with thousands of developers around the world who share your passion.
+                  تواصل مع آلاف المطورين الليبيين حول العالم الذين يشاركونك شغفك.
                 </p>
               </div>
               
               <div className="card p-6 flex flex-col items-center text-center">
                 <div className="h-16 w-16 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                  </svg>
+                  <Code className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Knowledge</h3>
+                <h3 className="text-xl font-semibold mb-2">محتوى تعليمي</h3>
                 <p className="text-foreground/70">
-                  Access a vast library of code snippets, tips, and solutions to common problems.
+                  الوصول إلى مكتبة ضخمة من مقتطفات التعليمات البرمجية والنصائح والحلول للمشاكل الشائعة.
                 </p>
               </div>
               
               <div className="card p-6 flex flex-col items-center text-center">
                 <div className="h-16 w-16 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
+                  <Star className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Feedback</h3>
+                <h3 className="text-xl font-semibold mb-2">ملاحظات وتقييم</h3>
                 <p className="text-foreground/70">
-                  Receive constructive feedback on your code from experienced developers.
+                  تلقي ملاحظات بناءة على التعليمات البرمجية الخاصة بك من مطورين ذوي خبرة.
                 </p>
               </div>
               
               <div className="card p-6 flex flex-col items-center text-center">
                 <div className="h-16 w-16 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+                  <BookOpen className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Growth</h3>
+                <h3 className="text-xl font-semibold mb-2">النمو المهني</h3>
                 <p className="text-foreground/70">
-                  Improve your skills and advance your career through continuous learning and practice.
+                  تحسين مهاراتك وتطوير حياتك المهنية من خلال التعلم والممارسة المستمرة.
                 </p>
               </div>
             </div>
-            
-            <div className="mt-12 text-center">
-              <a href="/register" className="btn-primary">
-                Join Our Community
-              </a>
+          </div>
+        </section>
+        
+        <section className="py-16 bg-secondary/10">
+          <div className="container-content">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">نبذة عن المؤسس</h2>
+                <div className="flex items-center mb-4">
+                  <h3 className="text-xl font-semibold inline-flex items-center">
+                    Bn0mar
+                    <span className="ml-1 text-blue-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                  </h3>
+                </div>
+                <p className="text-foreground/80 mb-4">
+                  مطور ومبرمج ليبي متميز، قام بتأسيس أكاديمية Bn0mar بهدف توفير بيئة تعليمية متكاملة للمطورين والمبرمجين العرب.
+                </p>
+                <p className="text-foreground/80 mb-6">
+                  يؤمن Bn0mar بأهمية بناء مجتمع مبرمجين عربي قوي ومتطور، لذلك أطلق هذه المنصة لتكون جسراً للتواصل ومشاركة المعرفة بين المطورين الليبيين والعرب.
+                </p>
+                <Link to="/register" className="inline-flex items-center text-primary hover:text-primary/80 font-medium">
+                  انضم إلينا اليوم
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </div>
+              <div className="bg-gradient-to-br from-primary/10 to-secondary/20 p-6 rounded-xl">
+                <blockquote className="italic text-foreground/90 text-lg">
+                  "هدفنا في أكاديمية Bn0mar هو بناء مجتمع برمجي ليبي وعربي متطور ومترابط، نتبادل فيه الخبرات ونطور مهاراتنا معاً. نؤمن بأن المعرفة لا تنقص بالمشاركة، بل تزداد وتتضاعف."
+                  <footer className="text-foreground/70 mt-4 text-base font-medium">
+                    - Bn0mar، مؤسس الأكاديمية
+                  </footer>
+                </blockquote>
+              </div>
             </div>
           </div>
         </section>
@@ -108,18 +153,18 @@ const Index = () => {
             <div className="bg-primary/10 rounded-2xl p-8 md:p-12">
               <div className="max-w-3xl mx-auto text-center">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                  Ready to share your code with the world?
+                  هل أنت جاهز لمشاركة معرفتك وتعلم المزيد؟
                 </h2>
                 <p className="text-foreground/70 mb-8">
-                  Join thousands of developers who are already sharing their knowledge and learning from each other.
+                  انضم إلى آلاف المطورين الذين يشاركون المعرفة ويتعلمون من بعضهم البعض في أكاديمية Bn0mar.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a href="/register" className="btn-primary">
-                    Get Started
-                  </a>
-                  <a href="/explore" className="btn-secondary">
-                    Explore First
-                  </a>
+                  <Link to="/register" className="btn-primary">
+                    ابدأ الآن
+                  </Link>
+                  <Link to="/login" className="btn-secondary">
+                    تسجيل الدخول
+                  </Link>
                 </div>
               </div>
             </div>
