@@ -1,9 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Code, Eye, EyeOff, User, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { loginUser, initializeAdmin } from "@/utils/auth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,30 +12,32 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
+
+  // Initialize admin account on component mount (only once)
+  useEffect(() => {
+    initializeAdmin();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await loginUser(email, password);
       
       if (error) throw error;
       
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
+      toast("تم تسجيل الدخول بنجاح", {
         description: "أهلا بك في أكاديمية Bn0mar",
         duration: 3000,
       });
       
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Navigate to dashboard with prefetched data
+      // This prevents the performance issue after login
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
-      toast({
+      uiToast({
         title: "فشل تسجيل الدخول",
         description: error.message || "يرجى التحقق من بيانات الدخول والمحاولة مرة أخرى",
         variant: "destructive",
